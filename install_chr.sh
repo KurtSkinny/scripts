@@ -13,7 +13,6 @@ if [ -d /sys/firmware/efi ]; then
     echo "For UEFI installation, please search for an alternative method (requires manual partitioning)."    exit 1
 fi
 
-# Проверка наличия аргумента
 if [ -z "$1" ]; then
     echo "Usage: $0 <CHR_IMAGE_ZIP_URL>"
     echo "Example: $0 https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1-arm64.img.zip"
@@ -28,24 +27,22 @@ IMG_ZIP="chr_image.zip"
 cd /tmp || exit 1
 
 echo "--- Gathering Network Information ---"
-echo "--- Gathering Network Information ---"
-
 # Detect primary interface, IP with mask (CIDR), and default gateway
-ip route
-ip -4 addr show
 INTERFACE=$(ip route | grep default | awk '{print $5}' | head -n1)
 IP_ADDR=$(ip -4 addr show "$INTERFACE" | grep inet | awk '{print $2}' | head -n1)
 GATEWAY=$(ip route | grep default | awk '{print $3}' | head -n1)
 
 echo "------------------------------------------"
 echo "SAVE THIS DATA (required for RouterOS setup):"
+echo ""
 echo "IP/Mask: $IP_ADDR"
 echo "Gateway: $GATEWAY"
+echo ""
 echo "------------------------------------------"
 echo "Press ENTER to proceed, or Ctrl+C to cancel."
 read
 
-echo "--- Installing Dependencies ---"
+echo "--- Installing Dependencies (to be sure) ---"
 apt-get update && apt-get install -y wget unzip
 
 echo "--- Downloading and Unpacking Image ---"
@@ -83,15 +80,19 @@ read
 echo "--- Writing Image to Disk ---"
 # Force filesystem to Read-Only mode to avoid conflicts
 sync
+sleep 1
 echo u > /proc/sysrq-trigger
 # Write the image
+sleep 1
 dd if="$IMG_FILE" of="/dev/$DISK" bs=4M oflag=sync
 
 echo "--- Done! ---"
 echo "The server will reboot in 5 seconds."
 echo "Use your VNC console to log in (User: admin, No Password)."
-sleep 5
+sleep 3
 
 # Trigger immediate hardware reboot
-echo 1 > /proc/sys/kernel/sysrq
+sleep 1 && \
+echo 1 > /proc/sys/kernel/sysrq && \
+sleep 1 && \
 echo b > /proc/sysrq-trigger
