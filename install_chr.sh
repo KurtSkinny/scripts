@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Usage example for RouterOS v7.22.1
+# Usage example for RouterOS v7.22.1:
+# apt-get update && apt-get install -y wget unzip
 # wget -O install_chr.sh https://raw.githubusercontent.com/KurtSkinny/scripts/refs/heads/main/install_chr.sh
 # chmod +x install_chr.sh
 # ./install_chr.sh https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1-arm64.img.zip
