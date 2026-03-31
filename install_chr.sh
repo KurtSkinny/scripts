@@ -66,10 +66,17 @@ if [ -z "$DISK" ]; then
     DISK=$(fdisk -l | grep "Disk /dev/" | head -n 1 | awk '{print $2}' | cut -d: -f1)
 fi
 
+# Check if DISK is still empty
+if [ -z "$DISK" ]; then
+    echo "ERROR: Could not determine the system disk."
+    echo "Please check 'lsblk' or 'fdisk -l' manually."
+    exit 1
+fi
+
 echo ""
 echo "!!! WARNING !!!"
-echo "The script will overwrite the disk: $TARGET_DISK"
-echo "All current data on Debian 11 will be PERMANENTLY DELETED."
+echo "The script will overwrite the disk: /dev/$DISK"
+echo "All current data will be PERMANENTLY DELETED."
 echo "Press ENTER to proceed, or Ctrl+C to cancel."
 read
 
