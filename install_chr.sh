@@ -84,7 +84,7 @@ sleep 1
 echo u > /proc/sysrq-trigger
 # Write the image
 sleep 1
-dd if="$IMG_FILE" of="/dev/$DISK" bs=4M oflag=sync
+dd if="$IMG_FILE" of="/dev/$DISK" bs=1M oflag=sync
 
 echo "--- Done! ---"
 echo "The server will reboot in 5 seconds."
