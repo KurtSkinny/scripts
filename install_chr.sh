@@ -4,7 +4,7 @@
 # apt-get update && apt-get install -y wget unzip
 # wget -O install_chr.sh https://raw.githubusercontent.com/KurtSkinny/scripts/refs/heads/main/install_chr.sh
 # chmod +x install_chr.sh
-# ./install_chr.sh https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1-arm64.img.zip
+# ./install_chr.sh https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1.img.zip
 
 # Check bootloader type (UEFI vs BIOS)
 if [ -d /sys/firmware/efi ]; then
@@ -15,7 +15,7 @@ fi
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <CHR_IMAGE_ZIP_URL>"
-    echo "Example: $0 https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1-arm64.img.zip"
+    echo "Example: $0 https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1.img.zip"
     echo "Go to https://mikrotik.com/download/chr and copy url to img.zip"
     exit 1
 fi
