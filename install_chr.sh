@@ -6,7 +6,7 @@
 # apt-get update && apt-get install -y wget unzip
 # wget -O install_chr.sh https://raw.githubusercontent.com/KurtSkinny/scripts/refs/heads/main/install_chr.sh
 # chmod +x install_chr.sh
-# ./install_chr.sh https://download.mikrotik.com/routeros/7.22.1/chr-7.22.1.img.zip
+# ./install_chr.sh https://download.mikrotik.com/routeros/7.23.2/chr-7.23.2.img.zip
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "ERROR: This script must be run as root."
