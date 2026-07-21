@@ -111,3 +111,6 @@ ${TELEPROXY_BIN} -u nobody -H 443 -M 1 -S ${TG_SECRET} -D ${DOMAIN} --direct
 EOF
 
 chmod +x /start.sh
+
+echo "Done."
+echo "Run /start.sh or use it as your RouterOS Container CMD / Entrypoint"
