@@ -19,7 +19,7 @@ wget -O setup.sh https://raw.githubusercontent.com/KurtSkinny/scripts/master/tel
 chmod +x setup.sh
 
 export DOMAIN="yourdomain.com"
-export TG_SECRET="____YOUR_16-byte_hex_secret_____" # Or leave empty for auto-generation
+export TG_SECRET="" # 16-byte hex secret key, or leave empty for auto-generation
 
 . ./setup.sh
 
