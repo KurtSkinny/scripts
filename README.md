@@ -21,7 +21,7 @@ chmod +x setup.sh
 export DOMAIN="yourdomain.com"
 export TG_SECRET="" # 16-byte hex secret key, or leave empty for auto-generation
 
-. ./setup.sh
+./setup.sh
 
 # Run /start.sh or use it as your RouterOS Container CMD / Entrypoint
 ```
