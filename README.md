@@ -1,22 +1,41 @@
+### [install_chr.sh](https://github.com)
+Automated script to reinstall a Debian/Ubuntu server into MikroTik RouterOS (CHR) by downloading a disk image and writing it directly to the system disk.
 
-- [install_chr.sh](https://github.com/KurtSkinny/scripts/blob/master/install_chr.sh) - This script is used to automatically reinstall a Debian/Ubuntu server into MikroTik RouterOS (CHR) by downloading a disk image and writing it directly to the system disk.
-
-example:
 ```sh
 apt-get update && apt-get install -y wget unzip
-wget -O install_chr.sh https://raw.githubusercontent.com/KurtSkinny/scripts/master/install_chr.sh
+wget -O install_chr.sh https://githubusercontent.com
 chmod +x install_chr.sh
-./install_chr.sh https://download.mikrotik.com/routeros/7.23.2/chr-7.23.2.img.zip
+./install_chr.sh https://mikrotik.com
 ```
+
 ---
 
-- [index.html](https://github.com/KurtSkinny/scripts/blob/master/index.html) 
+### [teleproxy-alpine-ssl.sh](https://github.com)
+Automated installer for MTProto proxy ([Teleproxy](https://github.com/teleproxy/teleproxy)) with a Let's Encrypt SSL certificate inside an Alpine Linux container (optimized for MikroTik RouterOS). 
+* **Note:** `cron` is not used. **Restart the container weekly** to trigger automatic SSL renewal on boot.
+
 ```sh
-wget https://raw.githubusercontent.com/KurtSkinny/scripts/master/index.html
+wget -O setup.sh https://githubusercontent.com
+chmod +x setup.sh
+export DOMAIN="yourdomain.com"
+export TG_SECRET="____YOUR_16-byte_hex_secret_____" # Or leave empty for auto-generation
+. ./setup.sh
+# Run /start.sh or use it as your RouterOS Container CMD / Entrypoint
 ```
-/etc/nginx/http.d/default.conf
+
+---
+
+### [index.html](https://github.com) 
+Simple index page template.
+
+```sh
+wget https://githubusercontent.com -O index.html
+sed -i "s/YOUR_DOMAIN_NAME/yourdomain.com/g" index.html
+```
+
+Enable SSI (Server Side Includes) for this page in your Nginx configuration:
 ```conf
-    location = /index.html {
-        ssi on;
-    }
+location = /index.html {
+    ssi on;
+}
 ```
