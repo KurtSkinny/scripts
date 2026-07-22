@@ -33,7 +33,7 @@ fi
 [ "$(id -u)" -eq 0 ] || fatal "Run as root."
 
 apk update
-apk add nginx openssl curl git
+apk add nginx openssl curl
 
 curl -Lo ${TELEPROXY_BIN} https://github.com/teleproxy/teleproxy/releases/latest/download/teleproxy-linux-amd64
 chmod +x ${TELEPROXY_BIN}
