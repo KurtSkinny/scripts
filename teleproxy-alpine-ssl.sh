@@ -116,3 +116,6 @@ chmod +x /start.sh
 
 echo "Done."
 echo "Run /start.sh or use it as your RouterOS Container CMD / Entrypoint"
+
+# Self-destruction
+rm -- "$0"
