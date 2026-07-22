@@ -103,7 +103,7 @@ server {
 }
 
 server {
-    listen 127.0.0.1:8443 ssl default_server;
+    listen 8443 ssl default_server;
     ssl_certificate     /etc/nginx/ssl/${DOMAIN}_fullchain.pem;
     ssl_certificate_key /etc/nginx/ssl/${DOMAIN}_privkey.pem;
     ssl_protocols TLSv1.3;
