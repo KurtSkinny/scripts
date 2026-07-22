@@ -17,6 +17,7 @@ Automated installer for MTProto proxy ([Teleproxy](https://github.com/teleproxy/
 * A public IP address on your server/router.
 * A registered **domain name** with DNS A-records already pointing to your server's public IP.
 * Ports **80** and **443** must be forwarded and open on your firewall.
+* A supported CPU architecture: **x86_64 (amd64)** or **aarch64 (arm64)**.
 
 > **Note:** `cron` is not used. **Restart the container weekly** to trigger automatic SSL renewal on boot.
 
