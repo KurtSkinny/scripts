@@ -13,6 +13,8 @@ PURE_INDEX_URL="https://raw.githubusercontent.com/KurtSkinny/scripts/master/inde
 
 export LE_WORKING_DIR="$ACME_DIR"
 
+INSTALLER_FULL_PATH=$(readlink -f -- "$0")
+
 fatal() {
     echo "ERROR: $1" >&2
     exit 1
@@ -51,10 +53,10 @@ fi
 # ==========================================
 
 apk update
-apk add nginx openssl curl
+apk add nginx openssl curl wget ca-certificates
 
 TELEPROXY_URL=$(echo "$TELEPROXY_URL" | sed "s/{TELEPROXY_ARCH}/$TELEPROXY_ARCH/")
-curl -Lo ${TELEPROXY_BIN} ${TELEPROXY_URL}
+wget -O ${TELEPROXY_BIN} ${TELEPROXY_URL}
 chmod +x ${TELEPROXY_BIN}
 
 cat << EOF > /etc/nginx/http.d/default.conf
@@ -77,14 +79,18 @@ sed -i "s/YOUR_DOMAIN_NAME/${DOMAIN}/g" /var/www/${DOMAIN}/index.html
 
 /usr/sbin/nginx
 
-curl https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron
+wget -O - https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron
 
+echo "### Changing directory to ${ACME_DIR}..."
 cd ${ACME_DIR}
 
+echo "### Setting default Certificate Authority to Let's Encrypt..."
 ./acme.sh --set-default-ca --server letsencrypt
 
+echo "### Issuing SSL certificate via webroot validation for ${DOMAIN}..."
 ./acme.sh --issue -d ${DOMAIN} -w /var/www/${DOMAIN}
 
+echo "### Installing certificate files to Nginx directory..."
 ./acme.sh --install-cert \
   -d ${DOMAIN} \
   --key-file       /etc/nginx/ssl/${DOMAIN}_privkey.pem \
@@ -145,4 +151,4 @@ echo "Done."
 echo "Run /start.sh or use it as your RouterOS Container CMD / Entrypoint"
 
 # Self-destruction
-rm -- "$0"
+rm -- "$INSTALLER_FULL_PATH"
