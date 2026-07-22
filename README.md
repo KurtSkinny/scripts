@@ -11,7 +11,12 @@ chmod +x install_chr.sh
 ---
 
 ### [teleproxy-alpine-ssl.sh](https://github.com/KurtSkinny/scripts/blob/main/teleproxy-alpine-ssl.sh)
-Automated installer for MTProto proxy ([Teleproxy](https://github.com/teleproxy/teleproxy)) with a Let's Encrypt SSL certificate inside an Alpine Linux container (optimized for MikroTik RouterOS). 
+Automated installer for MTProto proxy ([Teleproxy](https://github.com/teleproxy/teleproxy)) masked behind a legitimate, fully functional HTTPS website with a valid Let's Encrypt SSL certificate using an Alpine Linux container (optimized for MikroTik RouterOS). 
+
+#### Prerequisites:
+* A public IP address on your server/router.
+* A registered **domain name** with DNS A-records already pointing to your server's public IP.
+* Ports **80** and **443** must be forwarded and open on your firewall.
 * **Note:** `cron` is not used. **Restart the container weekly** to trigger automatic SSL renewal on boot.
 
 ```sh
