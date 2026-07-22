@@ -74,9 +74,11 @@ server {
 }
 
 server {
-    listen 443 ssl;
+    listen 127.0.0.1:8443 ssl default_server;
     ssl_certificate     /etc/nginx/ssl/${DOMAIN}_fullchain.pem;
     ssl_certificate_key /etc/nginx/ssl/${DOMAIN}_privkey.pem;
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
     root /var/www/${DOMAIN};
     location = /index.html {
         ssi on;
@@ -107,7 +109,7 @@ echo "Telegram MTProto Proxy Link:"
 echo "${TG_LINK}"
 echo "======================================================================"
 
-${TELEPROXY_BIN} -u nobody -H 443 -M 1 -S ${TG_SECRET} -D ${DOMAIN} --direct
+${TELEPROXY_BIN} -u nobody -H 443 -M 1 -S ${TG_SECRET} -D ${DOMAIN}:8443 --direct
 EOF
 
 chmod +x /start.sh
