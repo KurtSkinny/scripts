@@ -17,7 +17,8 @@ Automated installer for MTProto proxy ([Teleproxy](https://github.com/teleproxy/
 * A public IP address on your server/router.
 * A registered **domain name** with DNS A-records already pointing to your server's public IP.
 * Ports **80** and **443** must be forwarded and open on your firewall.
-* **Note:** `cron` is not used. **Restart the container weekly** to trigger automatic SSL renewal on boot.
+
+> **Note:** `cron` is not used. **Restart the container weekly** to trigger automatic SSL renewal on boot.
 
 ```sh
 wget -O setup.sh https://raw.githubusercontent.com/KurtSkinny/scripts/master/teleproxy-alpine-ssl.sh
