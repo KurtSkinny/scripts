@@ -26,7 +26,7 @@ wget -O setup.sh https://raw.githubusercontent.com/KurtSkinny/scripts/master/tel
 chmod +x setup.sh
 
 export DOMAIN="yourdomain.com"
-export TG_SECRET="" # 16-byte hex secret key, or leave empty for auto-generation
+export PROXY_SECRET="" # 16-byte hex secret key, or leave empty for auto-generation
 export TG_BOT_TOKEN="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ" # Optional: Telegram Bot Token for notifications
 export TG_CHAT_ID="123456789" # Optional: Telegram Chat/User ID for notifications
 
