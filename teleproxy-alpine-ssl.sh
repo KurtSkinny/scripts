@@ -54,6 +54,25 @@ if [ -z "${PROXY_SECRET}" ]; then
     fatal "PROXY_SECRET is missing. Set the variable and rerun the script."
 fi
 
+if which nginx >/dev/null 2>&1 || [ -d "/etc/nginx" ]; then
+    echo "--------------------------------------------------------------" >&2
+    echo "ERROR: Nginx or its configuration directory already exists!" >&2
+    echo "To avoid overwriting existing configurations, execution stopped." >&2
+    echo "If you want to reinstall, remove them first (apk del nginx && rm -rf /etc/nginx)." >&2
+    echo "--------------------------------------------------------------" >&2
+    fatal "Nginx detected. Protection triggered."
+fi
+
+for PORT in 80 443 8443; do
+    if netstat -tuln | grep -q ":${PORT} "; then
+        echo "--------------------------------------------------------------" >&2
+        echo "ERROR: Local port ${PORT} is already in use by another process!" >&2
+        echo "Please stop any service using port ${PORT} before running this script." >&2
+        echo "--------------------------------------------------------------" >&2
+        fatal "Port ${PORT} is busy."
+    fi
+done
+
 # ==========================================
 # ENVIRONMENT & DEPENDENCIES SETUP
 # ==========================================
@@ -72,18 +91,58 @@ server {
 }
 EOF
 
-mkdir -p /etc/nginx/ssl
 mkdir -p /var/www/${DOMAIN}
 
 wget -O /var/www/${DOMAIN}/index.html ${PURE_INDEX_URL} || fatal "Failed to download index.html."
 
 sed -i "s/YOUR_DOMAIN_NAME/${DOMAIN}/g" /var/www/${DOMAIN}/index.html
 
+/usr/sbin/nginx
+
+# ==========================================
+# NETWORK & PORT FORWARDING VALIDATION
+# ==========================================
+
+echo "### Running network validation for ${DOMAIN}..."
+
+WAN_IP=$(curl -s --max-time 5 https://ifconfig.me || curl -s --max-time 5 https://portchecker.io/api/me)
+DOMAIN_IP=$(getent hosts "${DOMAIN}" | awk '{print $1}')
+
+if [ -z "${WAN_IP}" ]; then
+    fatal "Network Error: Unable to detect external WAN IP."
+fi
+
+if [ -z "${DOMAIN_IP}" ]; then
+    fatal "DNS Error: Cannot resolve domain ${DOMAIN}. Check your A-records."
+fi
+
+if [ "${WAN_IP}" != "${DOMAIN_IP}" ]; then
+    echo "--------------------------------------------------------------" >&2
+    echo "ERROR: DNS mismatch detected!" >&2
+    echo "Your domain '${DOMAIN}' points to IP: ${DOMAIN_IP}" >&2
+    echo "But your actual external WAN IP is: ${WAN_IP}" >&2
+    echo "Please update your DNS A-records before running the script." >&2
+    echo "--------------------------------------------------------------" >&2
+    fatal "Domain IP does not match WAN IP."
+fi
+
+echo "### Verifying if port 80 is accessible from the internet..."
+PORT_80_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/80")
+
+if [ "${PORT_80_STATUS}" != "True" ]; then
+    echo "--------------------------------------------------------------" >&2
+    echo "ERROR: Port 80 is NOT accessible from the outside internet!" >&2
+    echo "Please forward port 80 (TCP) in MikroTik RouterOS to this container." >&2
+    echo "Check API response: ${PORT_80_STATUS}" >&2
+    echo "--------------------------------------------------------------" >&2
+    fatal "Port 80 is blocked or not forwarded. Script execution stopped."
+fi
+
 # ==========================================
 # INITIAL SSL CERTIFICATE ISSUANCE
 # ==========================================
 
-/usr/sbin/nginx
+mkdir -p /etc/nginx/ssl
 
 wget -O - https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron \
 || fatal "Failed to install acme.sh."
