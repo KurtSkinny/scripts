@@ -2,7 +2,7 @@
 
 ### REQUIRED ###
 # export DOMAIN=""
-# export TG_SECRET=""
+# export PROXY_SECRET=""
 
 ### OPTIONAL ###
 # export TG_BOT_TOKEN="""
@@ -43,15 +43,15 @@ if [ -z "${DOMAIN}" ]; then
     fatal "The DOMAIN environment variable is not set or empty. Please run: export DOMAIN=\"yourdomain.com\""
 fi
 
-if [ -z "${TG_SECRET}" ]; then
+if [ -z "${PROXY_SECRET}" ]; then
     GENERATED_SECRET=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d '\n ')
     echo "--------------------------------------------------------------" >&2
-    echo "ERROR: The TG_SECRET environment variable is empty or not set." >&2
+    echo "ERROR: The PROXY_SECRET environment variable is empty or not set." >&2
     echo "Please provide your own secret or use the newly generated:" >&2
     echo "" >&2
-    echo "export TG_SECRET=\"${GENERATED_SECRET}\"" >&2
+    echo "export PROXY_SECRET=\"${GENERATED_SECRET}\"" >&2
     echo "--------------------------------------------------------------" >&2
-    fatal "TG_SECRET is missing. Set the variable and rerun the script."
+    fatal "PROXY_SECRET is missing. Set the variable and rerun the script."
 fi
 
 # ==========================================
