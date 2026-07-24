@@ -208,7 +208,7 @@ EOF
 # ENTRYPOINT GENERATION & CLEANUP
 # ==========================================
 
-cat << EOF > /start.sh
+cat << EOF > /start.sh.new
 #!/bin/sh
 
 PROXY_SECRET="${PROXY_SECRET}"
@@ -293,10 +293,12 @@ echo "======================================================================"
 \${TELEPROXY_BIN} -u nobody -H 443 -M 0 -S \${PROXY_SECRET} -D \${DOMAIN}:8443 --direct
 EOF
 
-chmod +x /start.sh
+chmod +x /start.sh.new
 
 echo "Done."
 echo "Run /start.sh or use it as your RouterOS Container CMD / Entrypoint"
+
+mv /start.sh.new /start.sh
 
 # Self-destruction
 rm -- "$INSTALLER_FULL_PATH"
