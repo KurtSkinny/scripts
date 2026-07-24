@@ -201,7 +201,7 @@ EOF
 cat << EOF > /start.sh
 #!/bin/sh
 
-TG_SECRET="${TG_SECRET}"
+PROXY_SECRET="${PROXY_SECRET}"
 
 TG_BOT_TOKEN="${TG_BOT_TOKEN}"
 TG_CHAT_ID="${TG_CHAT_ID}"
@@ -212,7 +212,7 @@ TELEPROXY_BIN="${TELEPROXY_BIN}"
 TELEPROXY_URL="${TELEPROXY_URL}"
 
 DOMAIN_HEX=\$(echo -n "\${DOMAIN}" | od -An -tx1 | tr -d '\n ')
-TG_LINK="tg://proxy?server=\${DOMAIN}&port=443&secret=ee\${TG_SECRET}\${DOMAIN_HEX}"
+TG_LINK="tg://proxy?server=\${DOMAIN}&port=443&secret=ee\${PROXY_SECRET}\${DOMAIN_HEX}"
 
 tg_message() {
     if [ -z "\${TG_BOT_TOKEN}" ] || [ -z "\${TG_CHAT_ID}" ] || [ -z "\$1" ]; then
@@ -280,7 +280,7 @@ echo "Telegram MTProto Proxy Link:"
 echo "\${TG_LINK}"
 echo "======================================================================"
 
-\${TELEPROXY_BIN} -u nobody -H 443 -M 0 -S \${TG_SECRET} -D \${DOMAIN}:8443 --direct
+\${TELEPROXY_BIN} -u nobody -H 443 -M 0 -S \${PROXY_SECRET} -D \${DOMAIN}:8443 --direct
 EOF
 
 chmod +x /start.sh
