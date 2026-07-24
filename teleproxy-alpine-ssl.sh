@@ -35,7 +35,7 @@ fatal() {
 ARCH=$(uname -m)
 case "${ARCH}" in
     x86_64) TELEPROXY_ARCH="amd64" ;;
-    aarch64|arm64) TELEPROXY_ARCH="arm64" ;;
+    aarch64) TELEPROXY_ARCH="arm64" ;;
     *) fatal "Unsupported architecture: ${ARCH}. Only x86_64 (amd64) and aarch64 (arm64) are supported." ;;
 esac
 
@@ -106,12 +106,22 @@ fi
 
 echo "### Verifying if ports 80,443 is accessible from the internet..."
 for PORT in 80 443; do
+    PORT_BEFORE_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
+    if [ "${PORT_BEFORE_STATUS}" = "True" ]; then
+        echo "--------------------------------------------------------------" >&2
+        echo "ERROR: Port ${PORT} is already RESPONDING from the outside!" >&2
+        echo "However, it is NOT forwarded to this container (local port check passed earlier)." >&2
+        echo "Likely, MikroTik RouterOS or another service is listening on this port itself." >&2
+        echo "Please fix your NAT rules so port ${PORT} routes directly to this container." >&2
+        echo "--------------------------------------------------------------" >&2
+        fatal "Port ${PORT} conflict detected on host/router."
+    fi
+
     nc -lk -p ${PORT} -e echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" >/dev/null 2>&1 &
     NC_PID=$!
     sleep 1
     PORT_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
     kill -9 $NC_PID >/dev/null 2>&1
-    wait $NC_PID >/dev/null 2>&1
 
     if [ "${PORT_STATUS}" != "True" ]; then
         echo "--------------------------------------------------------------" >&2
