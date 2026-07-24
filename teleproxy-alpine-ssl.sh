@@ -32,6 +32,14 @@ fatal() {
 
 [ "$(id -u)" -eq 0 ] || fatal "Run as root."
 
+CHECK_PORTS=true
+for arg in "$@"; do
+    if [ "$arg" = "--no-check-ports" ]; then
+        CHECK_PORTS=false
+        echo "External port checking is disabled via --no-check-ports flag."
+    fi
+done
+
 ARCH=$(uname -m)
 case "${ARCH}" in
     x86_64) TELEPROXY_ARCH="amd64" ;;
@@ -104,34 +112,45 @@ if [ "${WAN_IP}" != "${DOMAIN_IP}" ]; then
     fatal "Domain IP does not match WAN IP."
 fi
 
-echo "### Verifying if ports 80,443 is accessible from the internet..."
-for PORT in 80 443; do
-    PORT_BEFORE_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
-    if [ "${PORT_BEFORE_STATUS}" = "True" ]; then
-        echo "--------------------------------------------------------------" >&2
-        echo "ERROR: Port ${PORT} is already RESPONDING from the outside!" >&2
-        echo "However, it is NOT forwarded to this container (local port check passed earlier)." >&2
-        echo "Likely, MikroTik RouterOS or another service is listening on this port itself." >&2
-        echo "Please fix your NAT rules so port ${PORT} routes directly to this container." >&2
-        echo "--------------------------------------------------------------" >&2
-        fatal "Port ${PORT} conflict detected on host/router."
-    fi
+if [ "$CHECK_PORTS" = true ]; then
+    echo "### Verifying if ports 80,443 is accessible from the internet..."
+    for PORT in 80 443; do
+        PORT_BEFORE_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
+        if [ "${PORT_BEFORE_STATUS}" = "True" ]; then
+            echo "--------------------------------------------------------------------------------" >&2
+            echo "⚠️ WARNING / CONFLICT DETECTED on port ${PORT}!" >&2
+            echo "The port is already RESPONDING (Open) from the outside internet." >&2
+            echo "This usually means one of the following:" >&2
+            echo " 1) You are using an upstream proxy (like Nginx Stream L4 / HAProxy / Cloudflare)." >&2
+            echo " 2) The host system or router itself is listening on this port (e.g., system web server)." >&2
+            echo " 3) Your firewall/NAT rule maps to a different container, host, or service." >&2
+            echo "" >&2
+            echo "If you are absolutely sure that your Upstream Proxy, Docker network, or Router" >&2
+            echo "is configured correctly and will route Let's Encrypt validation traffic directly" >&2
+            echo "into this specific environment, you can bypass this safeguard." >&2
+            echo "" >&2
+            echo "To skip this verification, restart the script with the flag:" >&2
+            echo "   ./setup.sh --no-check-ports" >&2
+            echo "--------------------------------------------------------------------------------" >&2
+            fatal "Port ${PORT} connection conflict. Ensure correct traffic routing."
+        fi
 
-    nc -lk -p ${PORT} -e echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" >/dev/null 2>&1 &
-    NC_PID=$!
-    sleep 1
-    PORT_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
-    kill -9 $NC_PID >/dev/null 2>&1
+        nc -lk -p ${PORT} -e echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" >/dev/null 2>&1 &
+        NC_PID=$!
+        sleep 1
+        PORT_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
+        kill -9 $NC_PID >/dev/null 2>&1
 
-    if [ "${PORT_STATUS}" != "True" ]; then
-        echo "--------------------------------------------------------------" >&2
-        echo "ERROR: Port ${PORT} is NOT accessible from the outside internet!" >&2
-        echo "Please forward port ${PORT} (TCP) in MikroTik RouterOS to this container." >&2
-        echo "Check API response: ${PORT_STATUS}" >&2
-        echo "--------------------------------------------------------------" >&2
-        fatal "Port ${PORT} is blocked or not forwarded. Script execution stopped."
-    fi
-done
+        if [ "${PORT_STATUS}" != "True" ]; then
+            echo "--------------------------------------------------------------" >&2
+            echo "ERROR: Port ${PORT} is NOT accessible from the outside internet!" >&2
+            echo "Please forward port ${PORT} (TCP) to this environment." >&2
+            echo "Check API response: ${PORT_STATUS}" >&2
+            echo "--------------------------------------------------------------" >&2
+            fatal "Port ${PORT} is blocked or not forwarded. Script execution stopped."
+        fi
+    done
+fi
 
 # ==========================================
 # ENVIRONMENT & DEPENDENCIES SETUP
@@ -294,11 +313,10 @@ echo "======================================================================"
 EOF
 
 chmod +x /start.sh.new
+mv /start.sh.new /start.sh
 
 echo "Done."
 echo "Run /start.sh or use it as your RouterOS Container CMD / Entrypoint"
-
-mv /start.sh.new /start.sh
 
 # Self-destruction
 rm -- "$INSTALLER_FULL_PATH"
