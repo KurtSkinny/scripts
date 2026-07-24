@@ -32,11 +32,11 @@ fatal() {
 
 [ "$(id -u)" -eq 0 ] || fatal "Run as root."
 
-CHECK_PORTS=true
+CHECK_NETWORK=true
 for arg in "$@"; do
-    if [ "$arg" = "--no-check-ports" ]; then
-        CHECK_PORTS=false
-        echo "External port checking is disabled via --no-check-ports flag."
+    if [ "$arg" = "--no-network-check" ]; then
+        CHECK_NETWORK=false
+        echo "WARNING: All external network and port verifications are disabled via --no-network-check flag."
     fi
 done
 
@@ -86,39 +86,53 @@ done
 # ==========================================
 
 apk update || fatal "apk update failed."
-
 apk add curl wget ca-certificates || fatal "Failed to install required packages."
 
-echo "### Running network validation for ${DOMAIN}..."
+if [ "$CHECK_NETWORK" = true ]; then
+    echo "### Running network validation for ${DOMAIN}..."
 
-WAN_IP=$(curl -s --max-time 5 https://ifconfig.me || curl -s --max-time 5 https://portchecker.io/api/me)
-DOMAIN_IP=$(getent hosts "${DOMAIN}" | awk '{print $1}')
+    WAN_IP=$(curl -s --max-time 5 https://ifconfig.me || curl -s --max-time 5 https://portchecker.io/api/me)
+    DOMAIN_IP=$(nslookup "${DOMAIN}" 1.1.1.1 2>/dev/null | awk '/^Address: / { print $2 }' | grep -v '#')
 
-if [ -z "${WAN_IP}" ]; then
-    fatal "Network Error: Unable to detect external WAN IP."
-fi
+    if [ -z "${WAN_IP}" ]; then
+        echo "--------------------------------------------------------------" >&2
+        echo "ERROR: Unable to detect your external WAN IP." >&2
+        echo "If your container lacks direct outbound internet access to IP checkers," >&2
+        echo "you can completely bypass network validation by running:" >&2
+        echo "   ./setup.sh --no-network-check" >&2
+        echo "--------------------------------------------------------------" >&2
+        fatal "Network Error: External WAN IP detection failed."
+    fi
 
-if [ -z "${DOMAIN_IP}" ]; then
-    fatal "DNS Error: Cannot resolve domain ${DOMAIN}. Check your A-records."
-fi
+    if [ -z "${DOMAIN_IP}" ]; then
+        echo "--------------------------------------------------------------" >&2
+        echo "ERROR: Cannot resolve domain ${DOMAIN} via global DNS." >&2
+        echo "Please verify your A-records. If your DNS changes have not" >&2
+        echo "propagated yet but you want to force the installation, run:" >&2
+        echo "   ./setup.sh --no-network-check" >&2
+        echo "--------------------------------------------------------------" >&2
+        fatal "DNS Error: Domain resolution failed."
+    fi
 
-if [ "${WAN_IP}" != "${DOMAIN_IP}" ]; then
-    echo "--------------------------------------------------------------" >&2
-    echo "ERROR: DNS mismatch detected!" >&2
-    echo "Your domain '${DOMAIN}' points to IP: ${DOMAIN_IP}" >&2
-    echo "But your actual external WAN IP is: ${WAN_IP}" >&2
-    echo "Please update your DNS A-records before running the script." >&2
-    echo "--------------------------------------------------------------" >&2
-    fatal "Domain IP does not match WAN IP."
-fi
+    if [ "${WAN_IP}" != "${DOMAIN_IP}" ]; then
+        echo "--------------------------------------------------------------" >&2
+        echo "ERROR: DNS mismatch detected!" >&2
+        echo "Your domain '${DOMAIN}' points to IP: ${DOMAIN_IP}" >&2
+        echo "But your actual external WAN IP is: ${WAN_IP}" >&2
+        echo "Please update your DNS A-records before running the script." >&2
+        echo "" >&2
+        echo "If you are using a proxy/CDN or want to bypass this check:" >&2
+        echo "   ./setup.sh --no-check-ip" >&2
+        echo "--------------------------------------------------------------" >&2
+        fatal "Domain IP does not match WAN IP."
+    fi
 
-if [ "$CHECK_PORTS" = true ]; then
     echo "### Verifying if ports 80,443 is accessible from the internet..."
     for PORT in 80 443; do
         PORT_BEFORE_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
         if [ "${PORT_BEFORE_STATUS}" = "True" ]; then
             echo "--------------------------------------------------------------------------------" >&2
-            echo "⚠️ WARNING / CONFLICT DETECTED on port ${PORT}!" >&2
+            echo "WARNING / CONFLICT DETECTED on port ${PORT}!" >&2
             echo "The port is already RESPONDING (Open) from the outside internet." >&2
             echo "This usually means one of the following:" >&2
             echo " 1) You are using an upstream proxy (like Nginx Stream L4 / HAProxy / Cloudflare)." >&2
@@ -144,8 +158,11 @@ if [ "$CHECK_PORTS" = true ]; then
         if [ "${PORT_STATUS}" != "True" ]; then
             echo "--------------------------------------------------------------" >&2
             echo "ERROR: Port ${PORT} is NOT accessible from the outside internet!" >&2
-            echo "Please forward port ${PORT} (TCP) to this environment." >&2
+            echo "Please forward port ${PORT} (TCP) in your router/firewall to this environment." >&2
             echo "Check API response: ${PORT_STATUS}" >&2
+            echo "" >&2
+            echo "If you want to bypass port checking entirely, restart with:" >&2
+            echo "   ./setup.sh --no-network-check" >&2
             echo "--------------------------------------------------------------" >&2
             fatal "Port ${PORT} is blocked or not forwarded. Script execution stopped."
         fi
