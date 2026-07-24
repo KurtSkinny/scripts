@@ -74,34 +74,12 @@ for PORT in 80 443 8443; do
 done
 
 # ==========================================
-# ENVIRONMENT & DEPENDENCIES SETUP
+# NETWORK & PORT FORWARDING VALIDATION
 # ==========================================
 
 apk update || fatal "apk update failed."
-apk add nginx openssl curl wget ca-certificates || fatal "Failed to install required packages."
 
-TELEPROXY_URL=$(echo "$TELEPROXY_URL" | sed "s/{TELEPROXY_ARCH}/$TELEPROXY_ARCH/")
-wget -O "${TELEPROXY_BIN}" "${TELEPROXY_URL}" || fatal "Failed to download teleproxy."
-chmod +x "${TELEPROXY_BIN}"
-
-cat << EOF > /etc/nginx/http.d/default.conf
-server {
-    listen 80 default_server;
-    root /var/www/${DOMAIN};
-}
-EOF
-
-mkdir -p /var/www/${DOMAIN}
-
-wget -O /var/www/${DOMAIN}/index.html ${PURE_INDEX_URL} || fatal "Failed to download index.html."
-
-sed -i "s/YOUR_DOMAIN_NAME/${DOMAIN}/g" /var/www/${DOMAIN}/index.html
-
-/usr/sbin/nginx
-
-# ==========================================
-# NETWORK & PORT FORWARDING VALIDATION
-# ==========================================
+apk add curl wget ca-certificates || fatal "Failed to install required packages."
 
 echo "### Running network validation for ${DOMAIN}..."
 
@@ -126,26 +104,57 @@ if [ "${WAN_IP}" != "${DOMAIN_IP}" ]; then
     fatal "Domain IP does not match WAN IP."
 fi
 
-echo "### Verifying if port 80 is accessible from the internet..."
-PORT_80_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/80")
+echo "### Verifying if ports 80,443 is accessible from the internet..."
+for PORT in 80 443; do
+    nc -lk -p ${PORT} -e echo -e "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nOK" >/dev/null 2>&1 &
+    NC_PID=$!
+    sleep 1
+    PORT_STATUS=$(curl -s --max-time 7 "https://portchecker.io/api/${WAN_IP}/${PORT}")
+    kill -9 $NC_PID >/dev/null 2>&1
+    wait $NC_PID >/dev/null 2>&1
 
-if [ "${PORT_80_STATUS}" != "True" ]; then
-    echo "--------------------------------------------------------------" >&2
-    echo "ERROR: Port 80 is NOT accessible from the outside internet!" >&2
-    echo "Please forward port 80 (TCP) in MikroTik RouterOS to this container." >&2
-    echo "Check API response: ${PORT_80_STATUS}" >&2
-    echo "--------------------------------------------------------------" >&2
-    fatal "Port 80 is blocked or not forwarded. Script execution stopped."
-fi
+    if [ "${PORT_STATUS}" != "True" ]; then
+        echo "--------------------------------------------------------------" >&2
+        echo "ERROR: Port ${PORT} is NOT accessible from the outside internet!" >&2
+        echo "Please forward port ${PORT} (TCP) in MikroTik RouterOS to this container." >&2
+        echo "Check API response: ${PORT_STATUS}" >&2
+        echo "--------------------------------------------------------------" >&2
+        fatal "Port ${PORT} is blocked or not forwarded. Script execution stopped."
+    fi
+done
+
+# ==========================================
+# ENVIRONMENT & DEPENDENCIES SETUP
+# ==========================================
+
+apk add nginx openssl || fatal "Failed to install required packages."
+
+TELEPROXY_URL=$(echo "$TELEPROXY_URL" | sed "s/{TELEPROXY_ARCH}/$TELEPROXY_ARCH/")
+wget -O "${TELEPROXY_BIN}" "${TELEPROXY_URL}" || fatal "Failed to download teleproxy."
+chmod +x "${TELEPROXY_BIN}"
+
+cat << EOF > /etc/nginx/http.d/default.conf
+server {
+    listen 80 default_server;
+    root /var/www/${DOMAIN};
+}
+EOF
+
+mkdir -p /var/www/${DOMAIN}
+mkdir -p /etc/nginx/ssl
+
+wget -O /var/www/${DOMAIN}/index.html ${PURE_INDEX_URL} || fatal "Failed to download index.html."
+
+sed -i "s/YOUR_DOMAIN_NAME/${DOMAIN}/g" /var/www/${DOMAIN}/index.html
+
+wget -O - https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron \
+|| fatal "Failed to install acme.sh."
 
 # ==========================================
 # INITIAL SSL CERTIFICATE ISSUANCE
 # ==========================================
 
-mkdir -p /etc/nginx/ssl
-
-wget -O - https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron \
-|| fatal "Failed to install acme.sh."
+/usr/sbin/nginx
 
 echo "### Changing directory to ${ACME_DIR}..."
 cd "${ACME_DIR}"
