@@ -222,7 +222,13 @@ echo "### Installing certificate files to Nginx directory..."
 cat << EOF > /etc/nginx/http.d/default.conf
 server {
     listen 80 default_server;
-    return 301 https://\$host\$request_uri;
+    root /var/www/${DOMAIN};
+    location /.well-known/acme-challenge/ {
+        allow all;                                                                             
+    }
+    location / {
+        return 301 https://\$host$request_uri;
+    }
 }
 
 server {
