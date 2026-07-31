@@ -189,11 +189,11 @@ EOF
 mkdir -p /var/www/${DOMAIN}
 mkdir -p /etc/nginx/ssl
 
-wget -O /var/www/${DOMAIN}/index.html ${PURE_INDEX_URL} || fatal "Failed to download index.html."
+wget --timeout=10 --tries=3 --retry-connrefused -O /var/www/${DOMAIN}/index.html ${PURE_INDEX_URL} || fatal "Failed to download index.html."
 
 sed -i "s/YOUR_DOMAIN_NAME/${DOMAIN}/g" /var/www/${DOMAIN}/index.html
 
-wget -O - https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron \
+wget --timeout=10 --tries=3 --retry-connrefused -O - https://get.acme.sh | sh -s email=my@${DOMAIN} --home ${ACME_DIR} --no-cron \
 || fatal "Failed to install acme.sh."
 
 # ==========================================
@@ -306,7 +306,7 @@ elif ! echo "\${TELEPROXY_CURRENT_VERSION}" | grep -qE "\${VALID_PATTERN}"; then
 else
     if [ "\${TELEPROXY_CURRENT_VERSION}" != "\${TELEPROXY_LATEST_VERSION}" ]; then
         echo "New version available: \${TELEPROXY_LATEST_VERSION} (Current: \${TELEPROXY_CURRENT_VERSION}). Downloading..."
-        if wget -O "\${TELEPROXY_BIN}.new" "\${TELEPROXY_URL}"; then
+        if wget --timeout=10 --tries=3 --retry-connrefused -O "\${TELEPROXY_BIN}.new" "\${TELEPROXY_URL}"; then
             chmod +x "\${TELEPROXY_BIN}.new"
             if "\${TELEPROXY_BIN}.new" null 2>&1 | grep -q "Invoking engine teleproxy-"; then
                 mv "\${TELEPROXY_BIN}.new" "\${TELEPROXY_BIN}"
