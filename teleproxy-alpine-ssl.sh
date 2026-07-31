@@ -176,7 +176,7 @@ fi
 apk add nginx openssl || fatal "Failed to install required packages."
 
 TELEPROXY_URL=$(echo "$TELEPROXY_URL" | sed "s/{TELEPROXY_ARCH}/$TELEPROXY_ARCH/")
-wget -O "${TELEPROXY_BIN}" "${TELEPROXY_URL}" || fatal "Failed to download teleproxy."
+wget --timeout=10 --tries=3 --retry-connrefused -O "${TELEPROXY_BIN}" "${TELEPROXY_URL}" || fatal "Failed to download teleproxy."
 chmod +x "${TELEPROXY_BIN}"
 
 cat << EOF > /etc/nginx/http.d/default.conf
