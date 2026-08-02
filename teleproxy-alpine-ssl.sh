@@ -306,7 +306,7 @@ elif ! echo "\${TELEPROXY_CURRENT_VERSION}" | grep -qE "\${VALID_PATTERN}"; then
 else
     if [ "\${TELEPROXY_CURRENT_VERSION}" != "\${TELEPROXY_LATEST_VERSION}" ]; then
         echo "New version available: \${TELEPROXY_LATEST_VERSION} (Current: \${TELEPROXY_CURRENT_VERSION}). Downloading..."
-        if wget --timeout=10 --tries=3 --retry-connrefused -O "\${TELEPROXY_BIN}.new" "\${TELEPROXY_URL}"; then
+        if wget --quiet --timeout=10 --tries=3 --retry-connrefused -O "\${TELEPROXY_BIN}.new" "\${TELEPROXY_URL}"; then
             chmod +x "\${TELEPROXY_BIN}.new"
             if "\${TELEPROXY_BIN}.new" null 2>&1 | grep -q "Invoking engine teleproxy-"; then
                 mv "\${TELEPROXY_BIN}.new" "\${TELEPROXY_BIN}"
