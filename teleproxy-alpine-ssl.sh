@@ -271,7 +271,7 @@ tg_message() {
         return 1
     fi
     curl -s -X POST "https://api.telegram.org/bot\${TG_BOT_TOKEN}/sendMessage" \\
-    -d "chat_id=\${TG_CHAT_ID}" --data-urlencode "text=$1" > /dev/null
+    -d "chat_id=\${TG_CHAT_ID}" --data-urlencode "text=\$1" > /dev/null
 }
 
 printf "\n127.0.0.1 %s\n" "\${DOMAIN}" >> /etc/hosts
